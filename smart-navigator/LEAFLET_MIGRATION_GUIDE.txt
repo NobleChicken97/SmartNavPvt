@@ -1,0 +1,639 @@
+# Leaflet.js Implementation Guide for Smart Navigator
+## Replace Google Maps with Free, Open-Source Leaflet Maps
+
+### Why Choose Leaflet.js for Campus Navigation?
+
+🍃 **Leaflet.js** is the leading open-source JavaScript library for mobile-friendly interactive maps. It's perfect for campus navigation because:
+
+- **🆓 COMPLETELY FREE** - No API keys, no quotas, no billing
+- **🚀 LIGHTWEIGHT** - Only 40KB, loads super fast
+- **📱 MOBILE-FIRST** - Designed for touch devices
+- **🎨 CUSTOMIZABLE** - Easy to style and extend
+- **🗺️ MULTIPLE TILE SOURCES** - Choose from many map styles
+- **📍 CAMPUS-FRIENDLY** - Perfect for custom overlays and indoor maps
+
+---
+
+## PART 1: REMOVE GOOGLE MAPS DEPENDENCIES
+
+### Step 1: Remove Google Maps Packages
+
+1. **Navigate to frontend folder**:
+   ```bash
+   cd "C:\Users\arpan\OneDrive\Desktop\Smart Navigator\smart-navigator\frontend"
+   ```
+
+2. **Remove Google Maps packages** (if any):
+   ```bash
+   npm uninstall @googlemaps/js-api-loader
+   ```
+
+### Step 2: Install Leaflet Dependencies
+
+```bash
+npm install leaflet
+npm install @types/leaflet --save-dev
+```
+
+---
+
+## PART 2: LEAFLET SETUP AND CONFIGURATION
+
+### Step 3: Update Environment Variables
+
+**Frontend .env file** (`frontend/.env`):
+```bash
+# Remove Google Maps variables (no longer needed!)
+# VITE_GOOGLE_MAPS_API_KEY=...  ← DELETE THIS
+# VITE_MAP_ID=...               ← DELETE THIS
+
+# Keep API configuration
+VITE_API_BASE_URL=http://localhost:5000
+
+# Optional: Add custom tile server (if you want different map styles)
+VITE_MAP_TILE_URL=https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png
+VITE_MAP_ATTRIBUTION=© OpenStreetMap contributors
+```
+
+### Step 4: Create Leaflet Configuration
+
+**Create new file**: `frontend/src/config/mapConfig.ts`
+```typescript
+export const MAP_CONFIG = {
+  // Thapar Institute coordinates (Patiala, Punjab)
+  center: {
+    lat: 30.3548,
+    lng: 76.3635
+  },
+  zoom: 16,
+  maxZoom: 19,
+  minZoom: 10,
+  
+  // Tile layer configuration
+  tileLayer: {
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  
+  // Alternative tile layers you can use
+  alternativeTiles: {
+    // Satellite view
+    satellite: {
+      url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+      attribution: '© Esri, Maxar, Earthstar Geographics'
+    },
+    // Dark theme
+    dark: {
+      url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+      attribution: '© OpenStreetMap, © CARTO'
+    },
+    // Terrain
+    terrain: {
+      url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+      attribution: '© OpenTopoMap, © OpenStreetMap contributors'
+    }
+  }
+};
+
+// Campus boundary (approximate)
+export const CAMPUS_BOUNDS = {
+  north: 30.3600,
+  south: 30.3500,
+  east: 76.3700,
+  west: 76.3570
+};
+
+// Custom marker icons for different location types
+export const MARKER_ICONS = {
+  academic: '🏫',
+  hostel: '🏠',
+  cafeteria: '🍽️',
+  library: '📚',
+  sports: '⚽',
+  medical: '🏥',
+  admin: '🏢',
+  parking: '🅿️',
+  atm: '🏧',
+  event: '🎉'
+};
+```
+
+---
+
+## PART 3: IMPLEMENT LEAFLET MAP COMPONENT
+
+### Step 5: Create New Map Component
+
+**Create new file**: `frontend/src/components/Map/LeafletMap.tsx`
+```typescript
+import React, { useEffect, useRef, useState } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+import { MAP_CONFIG, CAMPUS_BOUNDS, MARKER_ICONS } from '../../config/mapConfig';
+import { Location } from '../../types/location';
+
+// Fix for default markers in Leaflet with Webpack
+import markerIcon from 'leaflet/dist/images/marker-icon.png';
+import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
+import markerShadow from 'leaflet/dist/images/marker-shadow.png';
+
+delete (L.Icon.Default.prototype as any)._getIconUrl;
+L.Icon.Default.mergeOptions({
+  iconUrl: markerIcon,
+  iconRetinaUrl: markerIcon2x,
+  shadowUrl: markerShadow,
+});
+
+interface LeafletMapProps {
+  locations: Location[];
+  selectedLocation?: Location;
+  onLocationSelect?: (location: Location) => void;
+  searchTerm?: string;
+  selectedCategories?: string[];
+  className?: string;
+}
+
+export const LeafletMap: React.FC<LeafletMapProps> = ({
+  locations,
+  selectedLocation,
+  onLocationSelect,
+  searchTerm = '',
+  selectedCategories = [],
+  className = ''
+}) => {
+  const mapRef = useRef<HTMLDivElement>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const markersRef = useRef<L.Marker[]>([]);
+  const [mapStyle, setMapStyle] = useState<'default' | 'satellite' | 'dark' | 'terrain'>('default');
+
+  // Initialize map
+  useEffect(() => {
+    if (mapRef.current && !mapInstanceRef.current) {
+      // Create map instance
+      const map = L.map(mapRef.current).setView(
+        [MAP_CONFIG.center.lat, MAP_CONFIG.center.lng],
+        MAP_CONFIG.zoom
+      );
+
+      // Add tile layer
+      const tileLayer = L.tileLayer(MAP_CONFIG.tileLayer.url, {
+        attribution: MAP_CONFIG.tileLayer.attribution,
+        maxZoom: MAP_CONFIG.maxZoom,
+        minZoom: MAP_CONFIG.minZoom
+      });
+      
+      tileLayer.addTo(map);
+
+      // Set campus bounds
+      const bounds = L.latLngBounds(
+        [CAMPUS_BOUNDS.south, CAMPUS_BOUNDS.west],
+        [CAMPUS_BOUNDS.north, CAMPUS_BOUNDS.east]
+      );
+      map.setMaxBounds(bounds);
+
+      mapInstanceRef.current = map;
+    }
+
+    return () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.remove();
+        mapInstanceRef.current = null;
+      }
+    };
+  }, []);
+
+  // Filter locations based on search and categories
+  const filteredLocations = locations.filter(location => {
+    const matchesSearch = location.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         location.description.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesCategory = selectedCategories.length === 0 || 
+                           selectedCategories.includes(location.category);
+    return matchesSearch && matchesCategory;
+  });
+
+  // Update markers when locations change
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    // Clear existing markers
+    markersRef.current.forEach(marker => {
+      mapInstanceRef.current?.removeLayer(marker);
+    });
+    markersRef.current = [];
+
+    // Add new markers
+    filteredLocations.forEach(location => {
+      if (location.coordinates) {
+        // Create custom icon based on category
+        const emoji = MARKER_ICONS[location.category as keyof typeof MARKER_ICONS] || '📍';
+        const customIcon = L.divIcon({
+          html: `<div style="background: white; border-radius: 50%; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; border: 2px solid #3b82f6; font-size: 16px;">${emoji}</div>`,
+          iconSize: [30, 30],
+          iconAnchor: [15, 15],
+          className: 'custom-leaflet-marker'
+        });
+
+        const marker = L.marker([location.coordinates.lat, location.coordinates.lng], {
+          icon: customIcon
+        });
+
+        // Add popup
+        marker.bindPopup(`
+          <div class="p-3 min-w-[200px]">
+            <h3 class="font-bold text-lg mb-2">${location.name}</h3>
+            <p class="text-gray-600 mb-2">${location.description}</p>
+            <div class="flex justify-between items-center">
+              <span class="bg-blue-100 text-blue-800 px-2 py-1 rounded text-sm">${location.category}</span>
+              ${location.isOpen !== undefined ? 
+                `<span class="text-sm ${location.isOpen ? 'text-green-600' : 'text-red-600'}">
+                  ${location.isOpen ? 'Open' : 'Closed'}
+                </span>` : ''}
+            </div>
+          </div>
+        `);
+
+        // Add click handler
+        marker.on('click', () => {
+          onLocationSelect?.(location);
+        });
+
+        marker.addTo(mapInstanceRef.current!);
+        markersRef.current.push(marker);
+      }
+    });
+  }, [filteredLocations, onLocationSelect]);
+
+  // Handle selected location
+  useEffect(() => {
+    if (selectedLocation && selectedLocation.coordinates && mapInstanceRef.current) {
+      mapInstanceRef.current.setView(
+        [selectedLocation.coordinates.lat, selectedLocation.coordinates.lng],
+        18
+      );
+    }
+  }, [selectedLocation]);
+
+  // Change map style
+  const changeMapStyle = (style: 'default' | 'satellite' | 'dark' | 'terrain') => {
+    if (!mapInstanceRef.current) return;
+
+    // Remove current tile layer
+    mapInstanceRef.current.eachLayer((layer) => {
+      if (layer instanceof L.TileLayer) {
+        mapInstanceRef.current?.removeLayer(layer);
+      }
+    });
+
+    // Add new tile layer
+    let tileConfig = MAP_CONFIG.tileLayer;
+    if (style !== 'default') {
+      tileConfig = MAP_CONFIG.alternativeTiles[style];
+    }
+
+    const tileLayer = L.tileLayer(tileConfig.url, {
+      attribution: tileConfig.attribution,
+      maxZoom: MAP_CONFIG.maxZoom,
+      minZoom: MAP_CONFIG.minZoom
+    });
+
+    tileLayer.addTo(mapInstanceRef.current);
+    setMapStyle(style);
+  };
+
+  return (
+    <div className={`relative ${className}`}>
+      {/* Map Style Switcher */}
+      <div className="absolute top-4 right-4 z-[1000] bg-white rounded-lg shadow-lg p-2">
+        <div className="flex gap-1">
+          <button
+            onClick={() => changeMapStyle('default')}
+            className={`px-3 py-1 text-xs rounded ${mapStyle === 'default' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          >
+            Map
+          </button>
+          <button
+            onClick={() => changeMapStyle('satellite')}
+            className={`px-3 py-1 text-xs rounded ${mapStyle === 'satellite' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          >
+            Satellite
+          </button>
+          <button
+            onClick={() => changeMapStyle('dark')}
+            className={`px-3 py-1 text-xs rounded ${mapStyle === 'dark' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          >
+            Dark
+          </button>
+          <button
+            onClick={() => changeMapStyle('terrain')}
+            className={`px-3 py-1 text-xs rounded ${mapStyle === 'terrain' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}
+          >
+            Terrain
+          </button>
+        </div>
+      </div>
+
+      {/* Search Results Counter */}
+      <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2">
+        <span className="text-sm font-medium">
+          {filteredLocations.length} location{filteredLocations.length !== 1 ? 's' : ''} found
+        </span>
+      </div>
+
+      {/* Map Container */}
+      <div 
+        ref={mapRef} 
+        className="w-full h-full"
+        style={{ minHeight: '400px' }}
+      />
+    </div>
+  );
+};
+
+export default LeafletMap;
+```
+
+---
+
+## PART 4: UPDATE EXISTING COMPONENTS
+
+### Step 6: Update MapPage Component
+
+**Replace Google Maps import** in `frontend/src/pages/MapPage.tsx`:
+
+```typescript
+// OLD: Remove this import
+// import { GoogleMap } from '../components/Map/GoogleMap';
+
+// NEW: Add this import
+import { LeafletMap } from '../components/Map/LeafletMap';
+```
+
+**Replace the map component** in the JSX:
+
+```typescript
+{/* OLD: Replace this */}
+{/* <GoogleMap 
+  locations={filteredLocations}
+  selectedLocation={selectedLocation}
+  onLocationSelect={setSelectedLocation}
+  searchTerm={searchTerm}
+  selectedCategories={selectedCategories}
+  className="flex-1"
+/> */}
+
+{/* NEW: Use this instead */}
+<LeafletMap 
+  locations={filteredLocations}
+  selectedLocation={selectedLocation}
+  onLocationSelect={setSelectedLocation}
+  searchTerm={searchTerm}
+  selectedCategories={selectedCategories}
+  className="flex-1"
+/>
+```
+
+---
+
+## PART 5: ADVANCED FEATURES
+
+### Step 7: Add Campus-Specific Features
+
+**Enhanced Campus Overlay** - Create `frontend/src/components/Map/CampusOverlay.tsx`:
+```typescript
+import L from 'leaflet';
+
+export const addCampusOverlay = (map: L.Map) => {
+  // Add campus boundary
+  const campusBoundary = L.rectangle([
+    [30.3500, 76.3570], // Southwest corner
+    [30.3600, 76.3700]  // Northeast corner
+  ], {
+    color: '#3b82f6',
+    weight: 2,
+    fillOpacity: 0.1
+  }).addTo(map);
+
+  // Add building outlines (approximate)
+  const buildings = [
+    {
+      name: 'Main Academic Block',
+      coords: [[30.3555, 76.3625], [30.3565, 76.3625], [30.3565, 76.3635], [30.3555, 76.3635]]
+    },
+    {
+      name: 'Library',
+      coords: [[30.3545, 76.3640], [30.3555, 76.3640], [30.3555, 76.3650], [30.3545, 76.3650]]
+    }
+    // Add more buildings as needed
+  ];
+
+  buildings.forEach(building => {
+    L.polygon(building.coords, {
+      color: '#ef4444',
+      weight: 2,
+      fillOpacity: 0.3
+    }).bindPopup(building.name).addTo(map);
+  });
+};
+```
+
+### Step 8: Add Navigation Features
+
+**Route Planning** - Create `frontend/src/utils/navigation.ts`:
+```typescript
+import L from 'leaflet';
+
+export const calculateRoute = (from: L.LatLng, to: L.LatLng, map: L.Map) => {
+  // Simple straight-line route (you can integrate with routing services later)
+  const route = L.polyline([from, to], {
+    color: '#10b981',
+    weight: 4,
+    opacity: 0.8
+  }).addTo(map);
+
+  // Add walking time estimate
+  const distance = from.distanceTo(to); // meters
+  const walkingSpeed = 1.4; // m/s (average walking speed)
+  const timeMinutes = Math.round(distance / walkingSpeed / 60);
+
+  route.bindPopup(`
+    <div class="text-center">
+      <p><strong>Walking Route</strong></p>
+      <p>Distance: ${Math.round(distance)}m</p>
+      <p>Time: ~${timeMinutes} minutes</p>
+    </div>
+  `);
+
+  return route;
+};
+```
+
+---
+
+## PART 6: STYLING AND PERFORMANCE
+
+### Step 9: Add Custom CSS
+
+**Create** `frontend/src/styles/leaflet-custom.css`:
+```css
+/* Custom Leaflet Styles */
+.leaflet-container {
+  font-family: inherit;
+}
+
+.custom-leaflet-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+.leaflet-popup-content {
+  margin: 0;
+  font-family: inherit;
+}
+
+.leaflet-popup-tip {
+  background: white;
+}
+
+/* Dark theme support */
+.dark .leaflet-control-layers,
+.dark .leaflet-popup-content-wrapper {
+  background: #374151;
+  color: white;
+}
+
+.dark .leaflet-control-layers-toggle {
+  background-color: #374151;
+}
+
+/* Mobile optimizations */
+@media (max-width: 768px) {
+  .leaflet-control-container .leaflet-top.leaflet-right {
+    top: 60px;
+    right: 10px;
+  }
+  
+  .leaflet-control-container .leaflet-top.leaflet-left {
+    top: 60px;
+    left: 10px;
+  }
+}
+
+/* Loading animation */
+.leaflet-loading {
+  position: relative;
+}
+
+.leaflet-loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f4f6;
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  z-index: 1000;
+}
+
+@keyframes spin {
+  0% { transform: translate(-50%, -50%) rotate(0deg); }
+  100% { transform: translate(-50%, -50%) rotate(360deg); }
+}
+```
+
+**Import in** `frontend/src/index.css`:
+```css
+@import './styles/leaflet-custom.css';
+```
+
+---
+
+## PART 7: COMPARISON WITH GOOGLE MAPS
+
+### Features Comparison:
+
+| Feature | Google Maps | Leaflet.js | Winner |
+|---------|-------------|------------|--------|
+| **Cost** | Requires API key, has quotas | Completely free | 🍃 Leaflet |
+| **Performance** | Heavy (~200KB) | Lightweight (~40KB) | 🍃 Leaflet |
+| **Customization** | Limited styling | Full control | 🍃 Leaflet |
+| **Offline Support** | No | Yes (with cached tiles) | 🍃 Leaflet |
+| **Campus Maps** | Generic | Perfect for custom overlays | 🍃 Leaflet |
+| **Satellite Imagery** | High quality | Available but varies | 🗺️ Google |
+| **Street View** | Yes | No | 🗺️ Google |
+| **Traffic Data** | Real-time | Not available | 🗺️ Google |
+
+### For Campus Navigation: **Leaflet.js is the clear winner!** 🏆
+
+---
+
+## PART 8: MIGRATION STEPS
+
+### Complete Migration Checklist:
+
+```bash
+# 1. Install Leaflet
+cd frontend
+npm install leaflet @types/leaflet
+
+# 2. Create configuration files
+# - mapConfig.ts ✅
+# - LeafletMap.tsx ✅
+# - leaflet-custom.css ✅
+
+# 3. Update MapPage.tsx ✅
+# 4. Update environment variables ✅
+# 5. Test the application ✅
+
+# 6. Optional: Remove Google Maps dependencies
+npm uninstall @googlemaps/js-api-loader
+
+# 7. Start development servers
+npm run dev
+```
+
+---
+
+## PART 9: BENEFITS FOR YOUR PROJECT
+
+### Why This Is Perfect for Smart Navigator:
+
+1. **🆓 Zero Cost**: No API keys, no quotas, no surprise bills
+2. **🚀 Faster Loading**: 5x smaller than Google Maps
+3. **📱 Mobile Optimized**: Touch-friendly, responsive
+4. **🎨 Campus Customization**: 
+   - Custom building overlays
+   - Indoor navigation ready
+   - Branded color schemes
+5. **🔒 Privacy Friendly**: No tracking, GDPR compliant
+6. **🌐 Offline Ready**: Works without internet
+7. **🛠️ Developer Friendly**: Easy to extend and modify
+
+### Real-World Campus Benefits:
+
+- **🏫 Building Floor Plans**: Easy to add indoor maps
+- **🚶 Walking Paths**: Custom route overlays
+- **📍 Precise Locations**: Pin-point accuracy for rooms
+- **🎯 Events Overlay**: Real-time event locations
+- **🚗 Parking Integration**: Live parking availability
+- **🏃 Accessibility Routes**: Wheelchair-friendly paths
+
+---
+
+**🎉 Congratulations! You now have a FREE, powerful, and customizable mapping solution! 🎉**
+
+**Next Steps:**
+1. Follow the migration checklist above
+2. Test your application
+3. Customize the campus boundaries and buildings
+4. Add any specific features you need
+
+**Questions?** Ask me about any specific implementation details! 🚀

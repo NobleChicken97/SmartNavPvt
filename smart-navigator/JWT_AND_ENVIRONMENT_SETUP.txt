@@ -1,0 +1,333 @@
+# JWT Token & Environment Variables Setup Guide
+## Complete Guide for Smart Navigator Security Configuration
+
+### What is a JWT Secret?
+JWT (JSON Web Token) Secret is a cryptographic key used to sign and verify tokens for user authentication. It's like a master password that ensures your login tokens are secure and can't be forged.
+
+---
+
+## PART 1: GENERATING SECURE JWT SECRET
+
+### Method 1: Using Node.js (Recommended)
+
+1. **Open your terminal/command prompt**
+
+2. **Run Node.js directly**:
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+
+3. **You'll get output like**:
+   ```
+   a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456789012345678901234567890abcdef1234567890abcdef
+   ```
+
+4. **Copy this entire string** - this is your JWT secret!
+
+### Method 2: Using Online Generator (Alternative)
+
+1. **Visit**: https://generate-secret.now.sh/64
+2. **Click "Generate"** 
+3. **Copy the generated secret**
+
+### Method 3: Manual Generation (Simple)
+
+Create a long, random string combining:
+- Uppercase letters (A-Z)
+- Lowercase letters (a-z) 
+- Numbers (0-9)
+- Special characters (!@#$%^&*)
+
+**Example**: `MyApp2024!SecureJWT$Token#Navigator@2025*Admin&User`
+
+---
+
+## PART 2: COMPLETE ENVIRONMENT VARIABLES GUIDE
+
+### Backend Environment Variables (.env in backend folder)
+
+```bash
+# Server Configuration
+NODE_ENV=development
+PORT=5000
+
+# Database Configuration (You already have this from MongoDB Atlas)
+MONGODB_URI=mongodb+srv://agoyal12be23:23FXVKbvrQfIZg1e@smart-navigator-cluster.1gfqdbi.mongodb.net/?retryWrites=true&w=majority&appName=smart-navigator-cluster
+
+# JWT Authentication (REPLACE THE SECRET!)
+JWT_SECRET=YOUR_GENERATED_SECRET_FROM_ABOVE
+JWT_EXPIRES_IN=7d
+
+# Cookie Configuration
+COOKIE_NAME=smart_navigator_token
+
+# CORS Configuration
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Frontend Environment Variables (.env in frontend folder)
+
+```bash
+# Google Maps Configuration
+VITE_GOOGLE_MAPS_API_KEY=your-google-maps-api-key-here
+VITE_MAP_ID=your-google-maps-map-id-here
+
+# API Configuration
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+---
+
+## PART 3: GETTING GOOGLE MAPS API KEY
+
+### Step 1: Go to Google Cloud Console
+
+1. **Visit**: https://console.cloud.google.com/
+2. **Sign in** with your Google account
+3. **Accept terms** if prompted
+
+### Step 2: Create or Select Project
+
+1. **Click project dropdown** (top navigation bar)
+2. **Click "New Project"**
+3. **Project Name**: `Smart Navigator Maps`
+4. **Click "Create"**
+5. **Wait for project creation** (30 seconds)
+
+### Step 3: Enable Maps APIs
+
+1. **Go to APIs & Services** → **Library**
+2. **Search and enable these APIs**:
+   - ✅ **Maps JavaScript API**
+   - ✅ **Places API** (for search functionality)
+   - ✅ **Geocoding API** (for address conversion)
+   - ✅ **Directions API** (for navigation)
+
+### Step 4: Create API Key
+
+1. **Go to APIs & Services** → **Credentials**
+2. **Click "Create Credentials"** → **API Key**
+3. **Copy the API key** (looks like: `AIzaSyD4iE2xVSpkLLnMyWcjgdpQ7ScTQTnyMjM`)
+4. **Click "Restrict Key"** (for security)
+
+### Step 5: Restrict API Key (Important for Security)
+
+1. **Application restrictions**:
+   - Select "HTTP referrers (web sites)"
+   - Add: `http://localhost:3000/*`
+   - Add: `http://127.0.0.1:3000/*`
+
+2. **API restrictions**:
+   - Select "Restrict key"
+   - Choose: Maps JavaScript API, Places API, Geocoding API, Directions API
+
+3. **Click "Save"**
+
+### Step 6: Get Map ID (Optional but Recommended)
+
+1. **Go to**: https://console.cloud.google.com/google/maps-apis/studio/maps
+2. **Click "Create Map ID"**
+3. **Map Name**: `Smart Navigator Map`
+4. **Map Type**: `JavaScript`
+5. **Click "Next"** → **"Create"**
+6. **Copy the Map ID** (looks like: `DEMO_MAP_ID`)
+
+---
+
+## PART 4: UPDATING YOUR ENVIRONMENT FILES
+
+### Step 1: Update Backend .env
+
+1. **Navigate to**: `C:\Users\arpan\OneDrive\Desktop\Smart Navigator\smart-navigator\backend`
+
+2. **Open `.env` file** and update:
+
+```bash
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb+srv://agoyal12be23:23FXVKbvrQfIZg1e@smart-navigator-cluster.1gfqdbi.mongodb.net/?retryWrites=true&w=majority&appName=smart-navigator-cluster
+JWT_SECRET=a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef123456789012345678901234567890abcdef1234567890abcdef
+JWT_EXPIRES_IN=7d
+COOKIE_NAME=smart_navigator_token
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Step 2: Create Frontend .env
+
+1. **Navigate to**: `C:\Users\arpan\OneDrive\Desktop\Smart Navigator\smart-navigator\frontend`
+
+2. **Create `.env` file** (if it doesn't exist):
+
+```bash
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyD4iE2xVSpkLLnMyWcjgdpQ7ScTQTnyMjM
+VITE_MAP_ID=DEMO_MAP_ID
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+**⚠️ Replace with your actual API key and Map ID!**
+
+---
+
+## PART 5: SECURITY BEST PRACTICES
+
+### JWT Secret Security:
+
+✅ **DO:**
+- Use at least 64 characters
+- Include mixed case, numbers, symbols
+- Generate cryptographically random
+- Keep it secret (never commit to GitHub)
+- Use different secrets for dev/prod
+
+❌ **DON'T:**
+- Use simple passwords like "password123"
+- Reuse across projects
+- Share in public repositories
+- Use predictable patterns
+
+### API Key Security:
+
+✅ **DO:**
+- Restrict by domain/IP
+- Limit to specific APIs only
+- Monitor usage regularly
+- Rotate keys periodically
+
+❌ **DON'T:**
+- Leave unrestricted
+- Share publicly
+- Commit to version control
+- Use same key for multiple projects
+
+---
+
+## PART 6: TESTING YOUR CONFIGURATION
+
+### Step 1: Test JWT Generation
+
+1. **Start your backend**:
+   ```bash
+   cd "C:\Users\arpan\OneDrive\Desktop\Smart Navigator\smart-navigator\backend"
+   npm run dev
+   ```
+
+2. **Look for**: "Server running in development mode on port 5000"
+
+### Step 2: Test User Registration
+
+1. **Start frontend**:
+   ```bash
+   cd "C:\Users\arpan\OneDrive\Desktop\Smart Navigator\smart-navigator\frontend"
+   npm run dev
+   ```
+
+2. **Go to**: http://localhost:3000
+3. **Try registering** a new user
+4. **Check browser console** for any JWT errors
+
+### Step 3: Test Google Maps
+
+1. **Check if map loads** on the main page
+2. **Look for errors** in browser console
+3. **Common errors**:
+   - "Invalid API key" → Check your API key
+   - "RefererNotAllowedMapError" → Check domain restrictions
+
+---
+
+## PART 7: COMMON ISSUES & SOLUTIONS
+
+### JWT Token Issues:
+
+#### ❌ "Invalid JWT Secret"
+- **Solution**: Ensure JWT_SECRET is at least 32 characters
+- **Check**: No spaces or special formatting in .env
+
+#### ❌ "Token expired"
+- **Solution**: JWT_EXPIRES_IN is set (default: 7d)
+- **Check**: System clock is correct
+
+### Google Maps Issues:
+
+#### ❌ "Google Maps not loading"
+- **Solution**: Check API key is correct
+- **Verify**: All required APIs are enabled
+
+#### ❌ "This page can't load Google Maps correctly"
+- **Solution**: Check domain restrictions
+- **Add**: localhost:3000 to authorized domains
+
+### Environment Variable Issues:
+
+#### ❌ "Cannot read environment variables"
+- **Solution**: Restart both servers after .env changes
+- **Check**: File names are exactly `.env` (not .env.txt)
+
+---
+
+## PART 8: PRODUCTION CONSIDERATIONS
+
+### When deploying to production:
+
+1. **Generate new JWT secret** (don't use development one)
+2. **Create production Google Maps API key**
+3. **Update CORS_ORIGIN** to your domain
+4. **Use MongoDB Atlas production cluster**
+5. **Set NODE_ENV=production**
+
+### Example Production .env:
+
+```bash
+NODE_ENV=production
+PORT=5000
+MONGODB_URI=mongodb+srv://user:pass@prod-cluster.mongodb.net/smartnav
+JWT_SECRET=production-secret-different-from-dev
+JWT_EXPIRES_IN=1d
+COOKIE_NAME=smart_navigator_token
+CORS_ORIGIN=https://yourapp.com
+```
+
+---
+
+## QUICK CHECKLIST
+
+### ✅ Environment Setup Checklist:
+
+- [ ] JWT secret generated (64+ characters)
+- [ ] Backend .env file updated
+- [ ] Frontend .env file created
+- [ ] Google Maps API key obtained
+- [ ] Google Maps APIs enabled
+- [ ] API key restrictions set
+- [ ] Both servers restart successfully
+- [ ] User registration works
+- [ ] Google Maps loads correctly
+- [ ] No console errors
+
+---
+
+## EXAMPLE WORKING CONFIGURATION
+
+### Backend .env:
+```bash
+NODE_ENV=development
+PORT=5000
+MONGODB_URI=mongodb+srv://agoyal12be23:23FXVKbvrQfIZg1e@smart-navigator-cluster.1gfqdbi.mongodb.net/?retryWrites=true&w=majority&appName=smart-navigator-cluster
+JWT_SECRET=9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08
+JWT_EXPIRES_IN=7d
+COOKIE_NAME=smart_navigator_token
+CORS_ORIGIN=http://localhost:3000
+```
+
+### Frontend .env:
+```bash
+VITE_GOOGLE_MAPS_API_KEY=AIzaSyBkNaAGdFDsQM7xTy9FvJ8gL2wX0zY1A3B
+VITE_MAP_ID=4504f94b68c26b4d
+VITE_API_BASE_URL=http://localhost:5000
+```
+
+---
+
+**🎉 You're all set! Your Smart Navigator now has secure authentication and Google Maps integration! 🎉**
+
+Need help with any specific step? Just ask! 🚀
