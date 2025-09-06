@@ -1,0 +1,30 @@
+# Ignore all .txt files in any directory
+*.txt
+
+# If you want to keep README.txt, uncomment the next line:
+# !README.txt
+
+# Node modules & virtual environments (best practice)
+node_modules/
+.venv/
+venv/
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.*
+
+# IDE/workspace files
+.vscode/
+.idea/
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Ignore Husky's install script backup
+.husky/_/
+
+image.png
