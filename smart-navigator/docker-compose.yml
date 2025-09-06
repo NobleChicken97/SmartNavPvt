@@ -6,14 +6,21 @@ services:
     container_name: smart-navigator-mongo
     restart: unless-stopped
     ports:
-      - "27017:27017"
+      - "127.0.0.1:27017:27017"  # Bind to localhost only
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-secure_password_change_me}
     volumes:
       - mongodb_data:/data/db
     networks:
       - smart-navigator-network
+    security_opt:
+      - no-new-privileges:true
+    user: "999:999"  # Run as non-root user
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /var/log/mongodb
 
   backend:
     build: 
@@ -22,13 +29,13 @@ services:
     container_name: smart-navigator-backend
     restart: unless-stopped
     ports:
-      - "5000:5000"
+      - "127.0.0.1:5000:5000"  # Bind to localhost only
     environment:
-      NODE_ENV: development
-      MONGODB_URI: mongodb://admin:password@mongodb:27017/smart-navigator?authSource=admin
-      JWT_SECRET: your-super-secret-jwt-key-change-in-production
+      NODE_ENV: ${NODE_ENV:-production}
+      MONGODB_URI: mongodb://admin:${MONGO_PASSWORD:-secure_password_change_me}@mongodb:27017/smart-navigator?authSource=admin
+      JWT_SECRET: ${JWT_SECRET:-your-super-secret-jwt-key-change-in-production}
       COOKIE_NAME: smart_navigator_token
-      CORS_ORIGIN: http://localhost:3000
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
     depends_on:
       - mongodb
     volumes:
@@ -36,6 +43,12 @@ services:
       - /app/node_modules
     networks:
       - smart-navigator-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+      - /app/uploads
 
   frontend:
     build:
@@ -44,16 +57,23 @@ services:
     container_name: smart-navigator-frontend
     restart: unless-stopped
     ports:
-      - "3000:3000"
+      - "127.0.0.1:3000:3000"  # Bind to localhost only
     environment:
-      VITE_API_BASE_URL: http://localhost:5000
-      VITE_GOOGLE_MAPS_API_KEY: your-google-maps-api-key
-      VITE_MAP_ID: your-google-maps-map-id
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:5000}
+      VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+      VITE_MAP_ID: ${VITE_MAP_ID:-your-google-maps-map-id}
+    depends_on:
+      - backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
     networks:
       - smart-navigator-network
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
 
 volumes:
   mongodb_data:

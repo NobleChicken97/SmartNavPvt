@@ -49,11 +49,17 @@ app.use(helmet({
         "https://cdnjs.cloudflare.com" // Leaflet marker icons
       ],
       connectSrc: [
-        "'self'"
+        "'self'",
+        "https://api.github.com"
       ]
     }
   },
-  crossOriginEmbedderPolicy: false
+  crossOriginEmbedderPolicy: false, // Required for some third-party resources
+  hsts: {
+    maxAge: 31536000,
+    includeSubDomains: true,
+    preload: true
+  }
 }));
 
 // CORS configuration (support multiple origins from env)

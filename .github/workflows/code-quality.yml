@@ -25,7 +25,7 @@ jobs:
         tools: eslint,semgrep
         max-allowed-issues: 2147483647
       continue-on-error: true
-        
+
     - name: Upload Codacy results to GitHub
       uses: github/codeql-action/upload-sarif@v3
       if: always()
