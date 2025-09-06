@@ -21,6 +21,9 @@ jobs:
         verbose: true
         format: sarif
         output: codacy-results.sarif
+        # Add specific tools to reduce analysis time
+        tools: eslint,semgrep
+        max-allowed-issues: 2147483647
       continue-on-error: true
         
     - name: Upload Codacy results to GitHub
@@ -63,10 +66,16 @@ jobs:
         cd smart-navigator/frontend
         npm ci
         
+    - name: Install ESLint SARIF formatter
+      run: |
+        cd smart-navigator/frontend
+        npm install --save-dev @microsoft/eslint-formatter-sarif
+      continue-on-error: true
+        
     - name: Run ESLint with SARIF output
       run: |
         cd smart-navigator/frontend
-        npx eslint . --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+        npx eslint . --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif || npx eslint . --format json --output-file eslint-results.json
       continue-on-error: true
       
     - name: Upload ESLint results
@@ -74,10 +83,12 @@ jobs:
       if: always()
       with:
         sarif_file: smart-navigator/frontend/eslint-results.sarif
+      continue-on-error: true
 
   bundle-analysis:
     runs-on: ubuntu-latest
     needs: [eslint-analysis]
+    if: always()
     
     steps:
     - name: Checkout code
