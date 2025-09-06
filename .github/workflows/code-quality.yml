@@ -1,0 +1,139 @@
+name: Code Quality & Security
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  codacy-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Codacy Analysis CLI
+      uses: codacy/codacy-analysis-cli-action@4f64ca79a4c28fda4616e2a42b8dfa84847bb567 # v4.5.0
+      with:
+        project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
+        verbose: true
+        format: sarif
+        output: codacy-results.sarif
+        
+    - name: Upload Codacy results to GitHub
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: codacy-results.sarif
+
+  codacy-quality-gate:
+    runs-on: ubuntu-latest
+    needs: [codacy-analysis]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run Codacy Quality Gate
+      run: |
+        curl -X POST \
+          -H "Content-Type: application/json" \
+          -H "project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}" \
+          -d '{"commit": "${{ github.sha }}"}' \
+          "https://api.codacy.com/2.0/commit/${{ github.sha }}/issuesRemaining"
+      continue-on-error: true
+
+  eslint-analysis:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install frontend dependencies
+      run: |
+        cd smart-navigator/frontend
+        npm ci
+        
+    - name: Run ESLint with SARIF output
+      run: |
+        cd smart-navigator/frontend
+        npx eslint . --format @microsoft/eslint-formatter-sarif --output-file eslint-results.sarif
+      continue-on-error: true
+      
+    - name: Upload ESLint results
+      uses: github/codeql-action/upload-sarif@v3
+      if: always()
+      with:
+        sarif_file: smart-navigator/frontend/eslint-results.sarif
+
+  bundle-analysis:
+    runs-on: ubuntu-latest
+    needs: [eslint-analysis]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: './smart-navigator/frontend/package-lock.json'
+        
+    - name: Install dependencies
+      run: |
+        cd smart-navigator/frontend
+        npm ci
+        
+    - name: Build and analyze bundle
+      run: |
+        cd smart-navigator/frontend
+        npm run build
+        npx vite-bundle-analyzer dist --open-analyzer false --analyzer-mode json > bundle-report.json
+      continue-on-error: true
+      
+    - name: Upload bundle analysis
+      uses: actions/upload-artifact@v4
+      with:
+        name: bundle-analysis
+        path: ./smart-navigator/frontend/bundle-report.json
+        retention-days: 30
+
+  performance-audit:
+    runs-on: ubuntu-latest
+    needs: [bundle-analysis]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        
+    - name: Install dependencies and build
+      run: |
+        cd smart-navigator/frontend
+        npm ci
+        npm run build
+        
+    - name: Install Lighthouse
+      run: npm install -g @lhci/cli
+      
+    - name: Serve built app and run Lighthouse
+      run: |
+        cd smart-navigator/frontend
+        npx http-server dist -p 8080 &
+        sleep 5
+        lhci autorun --collect.url=http://localhost:8080 --collect.numberOfRuns=3
+      continue-on-error: true
