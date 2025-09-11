@@ -43,6 +43,7 @@ module.exports = [
       'backend/.eslintrc.cjs',
       '.eslintrc.js',
       'eslint.config.js',
+      'eslint.config.cjs',
     ],
     languageOptions: {
       ecmaVersion: 2021,
