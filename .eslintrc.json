@@ -1,0 +1,55 @@
+{
+  "root": true,
+  "env": {
+    "node": true,
+    "es2021": true,
+    "browser": false,
+    "jest": true
+  },
+  "extends": ["eslint:recommended"],
+  "parserOptions": {
+    "ecmaVersion": 2021,
+    "sourceType": "module"
+  },
+  "globals": {
+    "process": "readonly",
+    "console": "readonly",
+    "Buffer": "readonly",
+    "__dirname": "readonly",
+    "__filename": "readonly",
+    "require": "readonly",
+    "module": "readonly",
+    "exports": "readonly",
+    "global": "readonly",
+    "describe": "readonly",
+    "test": "readonly",
+    "it": "readonly",
+    "expect": "readonly",
+    "beforeAll": "readonly",
+    "afterAll": "readonly",
+    "beforeEach": "readonly",
+    "afterEach": "readonly",
+    "jest": "readonly"
+  },
+  "rules": {
+    "no-console": "off",
+    "no-unused-vars": ["error", { 
+      "argsIgnorePattern": "^(next|_)$",
+      "varsIgnorePattern": "^(THAPAR_CENTER|_)$"
+    }]
+  },
+  "overrides": [
+    {
+      "files": ["*.cjs", "**/*.cjs"],
+      "parserOptions": {
+        "sourceType": "script"
+      }
+    },
+    {
+      "files": ["backend/scripts/**/*.js", "scripts/**/*.js", "frontend/scripts/**/*.js"],
+      "parserOptions": {
+        "sourceType": "script"
+      }
+    }
+  ]
+}
