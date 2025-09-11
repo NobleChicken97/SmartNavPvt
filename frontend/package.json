@@ -6,9 +6,9 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
-    "lint:strict": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
-    "lint:fix": "eslint . --ext ts,tsx --fix",
+    "lint": "eslint . --report-unused-disable-directives",
+    "lint:strict": "eslint . --report-unused-disable-directives --max-warnings 0",
+    "lint:fix": "eslint . --fix",
     "lint:css": "stylelint \"src/**/*.css\" \"src/**/*.tsx\"",
     "lint:css:fix": "stylelint \"src/**/*.css\" \"src/**/*.tsx\" --fix",
     "preview": "vite preview",
