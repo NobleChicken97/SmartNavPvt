@@ -1,23 +1,19 @@
-## Summary
-Brief description of the changes made in this pull request.
+## What's Changed
+Brief description of your changes.
 
 ## Type of Change
-- [ ] 🐛 Bug fix (non-breaking change that fixes an issue)
-- [ ] ✨ New feature (non-breaking change that adds functionality)
-- [ ] 💥 Breaking change (fix or feature that would cause existing functionality to not work as expected)
-- [ ] 📚 Documentation update
-- [ ] 🧹 Code cleanup/refactoring
-- [ ] ⚡ Performance improvement
-- [ ] 🔒 Security fix
-- [ ] 🧪 Test improvements
+- [ ] 🐛 Bug fix
+- [ ] ✨ New feature  
+- [ ]  Documentation
+- [ ] 🧹 Code cleanup
 
 ## Related Issues
-Closes #[issue number]
-Related to #[issue number]
+Closes #[issue number] (if applicable)
 
-## Changes Made
-### Frontend Changes
-- [ ] UI/UX improvements
+## Checklist
+- [ ] Code works locally
+- [ ] No console errors
+- [ ] Follows existing patterns
 - [ ] Component modifications
 - [ ] Routing changes
 - [ ] State management updates

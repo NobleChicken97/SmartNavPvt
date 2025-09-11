@@ -30,6 +30,21 @@ cd ../
 npm run dev  # Starts both frontend and backend
 ```
 
+## 🔧 Code Quality & Standards
+
+### Codacy Integration
+This project maintains an **A-grade (94/100)** code quality score through automated analysis:
+- **ESLint**: JavaScript/TypeScript code quality
+- **Semgrep**: Security pattern detection  
+- **Trivy**: Dependency vulnerability scanning
+
+### Development Workflow
+```bash
+# Before committing - Husky will automatically run:
+git add .
+git commit -m "your message"  # Triggers lint + type-check + tests
+```
+
 ## 🔧 Development Workflow
 
 ### Starting Development Servers

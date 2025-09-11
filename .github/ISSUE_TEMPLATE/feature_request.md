@@ -1,33 +1,22 @@
 ---
 name: Feature Request
-about: Suggest an idea for the Smart Navigator project
+about: Suggest a new feature for Smart Navigator
 title: '[FEATURE] '
-labels: ['enhancement', 'needs-discussion']
+labels: ['enhancement']
 assignees: ''
 ---
 
-## Feature Summary
-A clear and concise description of the feature you'd like to see implemented.
+## Feature Idea
+What feature would you like to see?
 
-## Problem Statement
-Is your feature request related to a problem? Please describe.
-A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]
+## Why is this useful?
+How would this help Thapar students/visitors?
 
-## Proposed Solution
-Describe the solution you'd like.
-A clear and concise description of what you want to happen.
+## How should it work?
+Describe how you imagine using this feature.
 
-## Alternative Solutions
-Describe alternatives you've considered.
-A clear and concise description of any alternative solutions or features you've considered.
-
-## Use Cases
-Describe specific scenarios where this feature would be useful:
-1. **Student Navigation:** [describe scenario]
-2. **Event Discovery:** [describe scenario] 
-3. **Admin Management:** [describe scenario]
-
-## Technical Considerations
+## Additional Context
+Any mockups, examples, or extra details?
 **Frontend Impact:**
 - [ ] New UI components needed
 - [ ] Map functionality changes
