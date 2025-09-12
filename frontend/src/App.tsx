@@ -6,6 +6,7 @@ import PrivateRoute from './components/PrivateRoute';
 import AdminRoute from './components/AdminRoute';
 import MapPage from './pages/MapPage';
 import ErrorBoundary from './components/ErrorBoundary';
+import { RouteErrorBoundary } from './components/SpecializedErrorBoundaries';
 import { Toaster } from 'react-hot-toast';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
@@ -39,25 +40,43 @@ function App() {
         <ErrorBoundary>
         <Routes>
           {/* Public Routes */}
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/register" element={<RegisterPage />} />
+          <Route 
+            path="/login" 
+            element={
+              <RouteErrorBoundary routeName="Login">
+                <LoginPage />
+              </RouteErrorBoundary>
+            } 
+          />
+          <Route 
+            path="/register" 
+            element={
+              <RouteErrorBoundary routeName="Register">
+                <RegisterPage />
+              </RouteErrorBoundary>
+            } 
+          />
           
           {/* Protected Routes */}
           <Route
             path="/dashboard"
             element={
-              <PrivateRoute>
-                <MapPage />
-              </PrivateRoute>
+              <RouteErrorBoundary routeName="Dashboard">
+                <PrivateRoute>
+                  <MapPage />
+                </PrivateRoute>
+              </RouteErrorBoundary>
             }
           />
           
           <Route
             path="/map"
             element={
-              <PrivateRoute>
-                <MapPage />
-              </PrivateRoute>
+              <RouteErrorBoundary routeName="Map">
+                <PrivateRoute>
+                  <MapPage />
+                </PrivateRoute>
+              </RouteErrorBoundary>
             }
           />
 
@@ -65,12 +84,14 @@ function App() {
           <Route
             path="/admin/*"
             element={
-              <AdminRoute>
-                <div className="p-8 text-center">
-                  <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-                  <p className="text-gray-600 mt-2">Admin functionality will be implemented here</p>
-                </div>
-              </AdminRoute>
+              <RouteErrorBoundary routeName="Admin Dashboard">
+                <AdminRoute>
+                  <div className="p-8 text-center">
+                    <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+                    <p className="text-gray-600 mt-2">Admin functionality will be implemented here</p>
+                  </div>
+                </AdminRoute>
+              </RouteErrorBoundary>
             }
           />
 

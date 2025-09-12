@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, memo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -22,7 +22,7 @@ interface LeafletMapProps {
   className?: string;
 }
 
-export const LeafletMap: React.FC<LeafletMapProps> = ({
+export const LeafletMap = memo<LeafletMapProps>(({
   locations = [],
   events: _events = [],
   selectedLocation,
@@ -39,6 +39,16 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   const [showEvents, setShowEvents] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+
+  // Memoized callback for location selection
+  const handleLocationSelect = useCallback((location: Location) => {
+    onLocationSelect?.(location);
+  }, [onLocationSelect]);
+
+  // Memoized callback for event toggle
+  const handleEventToggle = useCallback(() => {
+    setShowEvents(prev => !prev);
+  }, []);
 
   // Initialize map
   useEffect(() => {
@@ -188,7 +198,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
         // Add click handler
         marker.on('click', () => {
-          onLocationSelect?.(location);
+          handleLocationSelect(location);
         });
 
         marker.addTo(mapInstanceRef.current!);
@@ -243,7 +253,7 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
   }
       });
     }
-  }, [filteredLocations, _events, onLocationSelect, showEvents]);
+  }, [filteredLocations, _events, handleLocationSelect, showEvents]);
 
   // Handle selected location
   useEffect(() => {
@@ -284,76 +294,144 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
 
   return (
     <div className={`relative ${className}`}>
-      {/* Map Controls (style switcher) */}
-      <div className="map-controls">
-        <div
+      {/* Map Controls (style switcher) with Accessibility */}
+      <div className="map-controls" role="toolbar" aria-label="Map style controls">
+        <button
           className={`layer-toggle-btn ${mapStyle === 'default' ? 'ring-2 ring-green-500' : ''}`}
-          title="Default map"
+          title="Default map view"
+          aria-label="Switch to default map view"
+          aria-pressed={mapStyle === 'default'}
           onClick={() => changeMapStyle('default')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              changeMapStyle('default');
+            }
+          }}
         >
           M
-        </div>
-        <div
+        </button>
+        <button
           className={`layer-toggle-btn ${mapStyle === 'satellite' ? 'ring-2 ring-green-500' : ''}`}
-          title="Satellite"
+          title="Satellite map view"
+          aria-label="Switch to satellite map view"
+          aria-pressed={mapStyle === 'satellite'}
           onClick={() => changeMapStyle('satellite')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              changeMapStyle('satellite');
+            }
+          }}
         >
           S
-        </div>
-        <div
+        </button>
+        <button
           className={`layer-toggle-btn ${mapStyle === 'dark' ? 'ring-2 ring-green-500' : ''}`}
-          title="Dark"
+          title="Dark map view"
+          aria-label="Switch to dark map view"
+          aria-pressed={mapStyle === 'dark'}
           onClick={() => changeMapStyle('dark')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              changeMapStyle('dark');
+            }
+          }}
         >
           D
-        </div>
-        <div
+        </button>
+        <button
           className={`layer-toggle-btn ${mapStyle === 'terrain' ? 'ring-2 ring-green-500' : ''}`}
-          title="Terrain"
+          title="Terrain map view"
+          aria-label="Switch to terrain map view"
+          aria-pressed={mapStyle === 'terrain'}
           onClick={() => changeMapStyle('terrain')}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              changeMapStyle('terrain');
+            }
+          }}
         >
           T
-        </div>
-        <div
+        </button>
+        <button
           className={`layer-toggle-btn ${showEvents ? 'ring-2 ring-emerald-500' : ''}`}
-          title="Toggle events"
-          onClick={() => setShowEvents(v => !v)}
+          title="Toggle events display"
+          aria-label={`${showEvents ? 'Hide' : 'Show'} events on map`}
+          aria-pressed={showEvents}
+          onClick={() => handleEventToggle()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              handleEventToggle();
+            }
+          }}
         >
           🎫
-        </div>
+        </button>
       </div>
 
-      {/* Search Results Counter */}
-    <div className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2">
+      {/* Search Results Counter with Accessibility */}
+    <div 
+      className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2"
+      role="status"
+      aria-live="polite"
+      aria-label={`Search results: ${(Array.isArray(filteredLocations) ? filteredLocations.length : 0)} location${(Array.isArray(filteredLocations) ? filteredLocations.length : 0) !== 1 ? 's' : ''} found`}
+    >
         <span className="text-sm font-medium">
       {(Array.isArray(filteredLocations) ? filteredLocations.length : 0)} location{(Array.isArray(filteredLocations) ? filteredLocations.length : 0) !== 1 ? 's' : ''} found
         </span>
       </div>
 
-      {/* Loading State */}
+      {/* Loading State with Accessibility */}
       {!isMapLoaded && !mapError && (
-        <div className="absolute inset-0 bg-gray-50 flex items-center justify-center z-[2000]">
+        <div 
+          className="absolute inset-0 bg-gray-50 flex items-center justify-center z-[2000]"
+          role="status"
+          aria-live="polite"
+          aria-label="Loading campus map"
+        >
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <div 
+              className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-2"
+              aria-hidden="true"
+            />
             <p className="text-gray-600 text-sm">Loading campus map...</p>
           </div>
         </div>
       )}
 
-      {/* Error State */}
+      {/* Error State with Accessibility */}
       {mapError && (
-        <div className="absolute inset-0 bg-red-50 flex items-center justify-center z-[2000]">
+        <div 
+          className="absolute inset-0 bg-red-50 flex items-center justify-center z-[2000]"
+          role="alert"
+          aria-live="assertive"
+          aria-label={`Map error: ${mapError}`}
+        >
           <div className="text-center">
-            <div className="text-red-600 text-xl mb-2">⚠️</div>
+            <div className="text-red-600 text-xl mb-2" aria-hidden="true">⚠️</div>
             <p className="text-red-600 text-sm">{mapError}</p>
           </div>
         </div>
       )}
 
-      {/* Map Container */}
+      {/* Map Container with Accessibility */}
       <div 
         ref={mapRef} 
         className="w-full h-full rounded-lg overflow-hidden"
+        role="img"
+        aria-label="Interactive campus map showing locations and events"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          // Allow map to receive focus for keyboard navigation
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            mapRef.current?.focus();
+          }
+        }}
         style={{ 
           minHeight: '500px',
           height: '100%',
@@ -362,6 +440,8 @@ export const LeafletMap: React.FC<LeafletMapProps> = ({
       />
     </div>
   );
-};
+});
+
+LeafletMap.displayName = 'LeafletMap';
 
 export default LeafletMap;

@@ -67,15 +67,26 @@ const LoginPage: React.FC = () => {
       <div className="max-w-md w-full space-y-8 animate-on-scroll">
         {/* Header */}
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-lg flex items-center justify-center" style={{background: 'linear-gradient(135deg, var(--primary-green), var(--secondary-blue))'}}>
-            <svg className="h-8 w-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div 
+            className="mx-auto h-12 w-12 rounded-lg flex items-center justify-center" 
+            style={{background: 'linear-gradient(135deg, var(--primary-green), var(--secondary-blue))'}}
+            role="img"
+            aria-label="Smart Navigator logo"
+          >
+            <svg 
+              className="h-8 w-8 text-white" 
+              fill="none" 
+              stroke="currentColor" 
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
             </svg>
           </div>
-          <h2 className="mt-6 text-3xl font-extrabold main-heading">
+          <h1 className="mt-6 text-3xl font-extrabold main-heading">
             Welcome back
-          </h2>
+          </h1>
           <p className="mt-2 text-sm text-gray-600">
             Sign in to Smart Navigator
           </p>
@@ -85,17 +96,33 @@ const LoginPage: React.FC = () => {
         </div>
 
         {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form 
+          className="mt-8 space-y-6" 
+          onSubmit={handleSubmit}
+          role="form"
+          aria-label="Login form"
+        >
           <div className="card p-6 space-y-4">
             {/* Error Display */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div 
+                className="bg-red-50 border border-red-200 rounded-md p-3"
+                role="alert"
+                aria-live="assertive"
+                aria-describedby="error-message"
+              >
                 <div className="flex">
-                  <svg className="h-5 w-5 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg 
+                    className="h-5 w-5 text-red-400" 
+                    fill="none" 
+                    stroke="currentColor" 
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="ml-3">
-                    <p className="text-sm text-red-800">{error}</p>
+                    <p id="error-message" className="text-sm text-red-800">{error}</p>
                   </div>
                 </div>
               </div>
@@ -104,7 +131,7 @@ const LoginPage: React.FC = () => {
             {/* Email Field */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                Email Address
+                Email Address <span className="text-red-500" aria-label="required">*</span>
               </label>
               <div className="mt-1">
                 <input
@@ -113,6 +140,9 @@ const LoginPage: React.FC = () => {
                   type="email"
                   autoComplete="email"
                   required
+                  aria-required="true"
+                  aria-invalid={error ? "true" : "false"}
+                  aria-describedby={error ? "error-message" : undefined}
                   value={formData.email}
                   onChange={handleInputChange}
                   className="input"
@@ -124,7 +154,7 @@ const LoginPage: React.FC = () => {
             {/* Password Field */}
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                Password
+                Password <span className="text-red-500" aria-label="required">*</span>
               </label>
               <div className="mt-1 relative">
                 <input
@@ -133,6 +163,9 @@ const LoginPage: React.FC = () => {
                   type={showPassword ? 'text' : 'password'}
                   autoComplete="current-password"
                   required
+                  aria-required="true"
+                  aria-invalid={error ? "true" : "false"}
+                  aria-describedby={`${error ? "error-message " : ""}password-toggle`}
                   value={formData.password}
                   onChange={handleInputChange}
                   className="input pr-10"
@@ -140,15 +173,30 @@ const LoginPage: React.FC = () => {
                 />
                 <button
                   type="button"
+                  id="password-toggle"
                   className="absolute inset-y-0 right-0 pr-3 flex items-center"
                   onClick={() => setShowPassword(!showPassword)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
                 >
                   {showPassword ? (
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg 
+                      className="h-5 w-5 text-gray-400" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.878 9.878L3 3m6.878 6.878L21 21" />
                     </svg>
                   ) : (
-                    <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg 
+                      className="h-5 w-5 text-gray-400" 
+                      fill="none" 
+                      stroke="currentColor" 
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                     </svg>

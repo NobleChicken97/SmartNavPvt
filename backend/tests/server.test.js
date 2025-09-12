@@ -1,28 +1,26 @@
 
 /* eslint-env jest, node */
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // Basic placeholder test for CI pipeline
 describe('Smart Navigator Backend', () => {
+  // Set test timeout globally
+  jest.setTimeout(10000);
+  
   beforeAll(async () => {
-    // Set test timeout
-    jest.setTimeout(10000);
-    
     // Mock database connection for testing
     try {
       if (mongoose.connection.readyState === 0) {
         const mongoUri = process.env.MONGODB_URI || 'mongodb://root:example@localhost:27017/smart-navigator-test?authSource=admin';
         await mongoose.connect(mongoUri, {
-          useNewUrlParser: true,
-          useUnifiedTopology: true,
-          connectTimeoutMS: 5000,
-          serverSelectionTimeoutMS: 5000,
+          connectTimeoutMS: 2000,
+          serverSelectionTimeoutMS: 2000,
         });
       }
     } catch (error) {
       console.log('Database connection failed, but tests can continue:', error.message);
     }
-  });
+  }, 8000);
 
   afterAll(async () => {
     try {
@@ -32,7 +30,7 @@ describe('Smart Navigator Backend', () => {
     } catch (error) {
       console.log('Database cleanup failed:', error.message);
     }
-  });
+  }, 5000);
 
   test('should have basic test structure', () => {
     expect(true).toBe(true);

@@ -3,9 +3,32 @@ import { generateToken, generateCSRFToken } from '../utils/jwt.js';
 import { asyncHandler } from '../middleware/errorHandler.js';
 
 /**
- * @desc    Register a new user
- * @route   POST /api/auth/register
- * @access  Public
+ * Authentication Controller
+ * @fileoverview Handles user authentication operations including registration, login, and logout
+ * @module controllers/authController
+ */
+
+/**
+ * Registers a new user account in the system
+ * @async
+ * @function register
+ * @description Creates a new user with hashed password and generates authentication tokens
+ * @route POST /api/auth/register
+ * @access Public
+ * @param {Object} req - Express request object
+ * @param {Object} req.body - Request body containing user data
+ * @param {string} req.body.name - User's full name (required)
+ * @param {string} req.body.email - User's email address (required, unique)
+ * @param {string} req.body.password - User's password (required, min 6 characters)
+ * @param {string[]} [req.body.interests] - Array of user interests (optional)
+ * @param {Object} res - Express response object
+ * @returns {Promise<void>} JSON response with user data and auth tokens
+ * @throws {400} When user already exists or validation fails
+ * @throws {500} When database operation fails
+ * @example
+ * // POST /api/auth/register
+ * // Body: { "name": "John Doe", "email": "john@example.com", "password": "password123", "interests": ["sports"] }
+ * // Response: { "success": true, "data": { "user": {...}, "csrfToken": "..." } }
  */
 const register = asyncHandler(async (req, res) => {
   const { name, email, password, interests } = req.body;

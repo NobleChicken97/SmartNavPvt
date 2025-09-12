@@ -6,6 +6,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import cookieParser from 'cookie-parser';
 import connectDB from './utils/database.js';
+import logger from './utils/logger.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { generalLimiter } from './middleware/rateLimiter.js';
 
@@ -132,12 +133,22 @@ app.use(errorHandler);
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+  const serverLogger = logger.child({ component: 'server', event: 'startup' });
+  serverLogger.info('Server started successfully', {
+    environment: process.env.NODE_ENV || 'development',
+    port: PORT,
+    timestamp: new Date().toISOString()
+  });
 });
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err) => {
-  console.log(`Error: ${err.message}`);
+  const serverLogger = logger.child({ component: 'server', event: 'unhandled_rejection' });
+  serverLogger.error('Unhandled Promise Rejection', {
+    message: err.message,
+    stack: err.stack,
+    name: err.name
+  });
   // Close server & exit process
   server.close(() => {
     process.exit(1);
@@ -146,15 +157,22 @@ process.on('unhandledRejection', (err) => {
 
 // Handle uncaught exceptions
 process.on('uncaughtException', (err) => {
-  console.log(`Error: ${err.message}`);
+  const serverLogger = logger.child({ component: 'server', event: 'uncaught_exception' });
+  serverLogger.error('Uncaught Exception', {
+    message: err.message,
+    stack: err.stack,
+    name: err.name
+  });
   process.exit(1);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('SIGTERM received');
+  const serverLogger = logger.child({ component: 'server', event: 'shutdown' });
+  serverLogger.info('SIGTERM received - shutting down gracefully');
   server.close(() => {
-    console.log('Process terminated');
+    serverLogger.info('HTTP server closed');
+    process.exit(0);
   });
 });
 

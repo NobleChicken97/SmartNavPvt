@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import LoadingSpinner from './LoadingSpinner';
@@ -8,7 +8,7 @@ interface PrivateRouteProps {
   requiredRole?: 'student' | 'admin';
 }
 
-const PrivateRoute: React.FC<PrivateRouteProps> = ({ 
+const PrivateRoute = memo<PrivateRouteProps>(({ 
   children, 
   requiredRole 
 }) => {
@@ -34,6 +34,8 @@ const PrivateRoute: React.FC<PrivateRouteProps> = ({
   }
 
   return <>{children}</>;
-};
+});
+
+PrivateRoute.displayName = 'PrivateRoute';
 
 export default PrivateRoute;

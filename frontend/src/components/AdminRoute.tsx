@@ -1,4 +1,4 @@
-import React from 'react';
+import { memo } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuthStore } from '../stores/authStore';
 import LoadingSpinner from './LoadingSpinner';
@@ -7,7 +7,7 @@ interface AdminRouteProps {
   children: React.ReactNode;
 }
 
-const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
+const AdminRoute = memo<AdminRouteProps>(({ children }) => {
   const { user, isLoading } = useAuthStore();
 
   if (isLoading) {
@@ -27,6 +27,8 @@ const AdminRoute: React.FC<AdminRouteProps> = ({ children }) => {
   }
 
   return <>{children}</>;
-};
+});
+
+AdminRoute.displayName = 'AdminRoute';
 
 export default AdminRoute;
