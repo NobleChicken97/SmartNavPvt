@@ -17,6 +17,12 @@ const MapPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
+  // Routing state controlled from sidebar (SearchFilters)
+  const [routingMode, setRoutingMode] = useState<boolean>(false);
+
+  const handleToggleRouting = () => {
+    setRoutingMode((prev) => !prev);
+  };
 
   useEffect(() => {
     loadInitialData();
@@ -120,6 +126,8 @@ const MapPage: React.FC = () => {
               events={events}
               onLocationFilter={setFilteredLocations}
               onEventFilter={setFilteredEvents}
+              routingMode={routingMode}
+              onToggleRouting={handleToggleRouting}
               className="sticky top-6"
             />
 
