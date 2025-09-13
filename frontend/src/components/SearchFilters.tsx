@@ -12,6 +12,8 @@ interface SearchFiltersProps {
   onLocationFilter: (locations: Location[]) => void;
   onEventFilter: (events: Event[]) => void;
   className?: string;
+  routingMode: boolean;
+  onToggleRouting: () => void;
 }
 
 const SearchFilters: React.FC<SearchFiltersProps> = ({
@@ -20,6 +22,8 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
   onLocationFilter,
   onEventFilter,
   className,
+  routingMode,
+  onToggleRouting,
 }) => {
   const {
     searchQuery,
@@ -192,6 +196,20 @@ const SearchFilters: React.FC<SearchFiltersProps> = ({
             Clear all
           </button>
         )}
+      </div>
+
+      {/* Navigation Toggle */}
+      <div className="px-4 py-2 border-b">
+        <button
+          onClick={onToggleRouting}
+          className={cn(
+            'btn btn-ghost !px-3 !py-1 flex items-center space-x-2 w-full',
+            routingMode && 'bg-blue-100 text-blue-700'
+          )}
+        >
+          <span className="text-lg">🧭</span>
+          <span>{routingMode ? 'Exit Navigation' : 'Get Directions'}</span>
+        </button>
       </div>
 
       {/* Filters Panel */}

@@ -210,6 +210,7 @@ const MapPage: React.FC = () => {
               events={filteredEvents}
               onLocationSelect={handleLocationSelect}
               onEventSelect={handleEventSelect}
+              enableRouting={true}
               className="h-[calc(100vh-8rem)] rounded-lg overflow-hidden shadow-md"
             />
           </div>

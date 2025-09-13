@@ -93,3 +93,7 @@ cookies.txt
 # Ignore all .txt files except specific ones
 *.txt
 !README.txt
+
+
+#Ignore vscode AI rules
+.github\instructions\codacy.instructions.md

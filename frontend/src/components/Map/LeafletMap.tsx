@@ -2,6 +2,9 @@ import { useEffect, useMemo, useRef, useState, memo, useCallback } from 'react';
 import toast from 'react-hot-toast';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-routing-machine/dist/leaflet-routing-machine.css';
+// @ts-ignore - leaflet-routing-machine doesn't have proper ES module exports
+import 'leaflet-routing-machine';
 import { MAP_CONFIG, MARKER_ICONS } from '../../config/mapConfig';
 import { Location, Event } from '../../types';
 
@@ -20,6 +23,9 @@ interface LeafletMapProps {
   onLocationSelect?: (location: Location) => void;
   onEventSelect?: (event: Event) => void;
   className?: string;
+  enableRouting?: boolean;
+  routingMode?: boolean;
+  onToggleRouting?: () => void;
 }
 
 export const LeafletMap = memo<LeafletMapProps>(({
@@ -28,17 +34,27 @@ export const LeafletMap = memo<LeafletMapProps>(({
   selectedLocation,
   onLocationSelect,
   onEventSelect: _onEventSelect,
-  className = ''
+  className = '',
+  enableRouting = false,
+  routingMode = false,
+  onToggleRouting,
 }) => {
   // TODO: Implement events display and onEventSelect functionality
   
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const markersRef = useRef<L.Marker[]>([]);
+  const routingControlRef = useRef<any>(null); // Routing control reference
+  
+  // Existing state
   const [mapStyle, setMapStyle] = useState<'default' | 'satellite' | 'dark' | 'terrain'>('default');
   const [showEvents, setShowEvents] = useState(true);
   const [isMapLoaded, setIsMapLoaded] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
+  
+  // New routing state
+  const [waypoints, setWaypoints] = useState<L.LatLng[]>([]);
+  const [routeInfo, setRouteInfo] = useState<{distance: string; time: string; instructions: string[]} | null>(null);
 
   // Memoized callback for location selection
   const handleLocationSelect = useCallback((location: Location) => {
@@ -48,6 +64,36 @@ export const LeafletMap = memo<LeafletMapProps>(({
   // Memoized callback for event toggle
   const handleEventToggle = useCallback(() => {
     setShowEvents(prev => !prev);
+  }, []);
+
+  // New routing callbacks
+  const handleToggleRouting = useCallback(() => {
+    if (onToggleRouting) {
+      onToggleRouting();
+    }
+  }, [onToggleRouting]);
+
+  const handleMapClick = useCallback((e: L.LeafletMouseEvent) => {
+    if (!routingMode || !enableRouting) return;
+    
+    const clickPoint = e.latlng;
+    setWaypoints(prev => {
+      const newWaypoints = [...prev, clickPoint];
+      // Limit to 2 waypoints for start/end
+      if (newWaypoints.length > 2) {
+        return [newWaypoints[1], clickPoint]; // Keep the last and new point
+      }
+      return newWaypoints;
+    });
+  }, [routingMode, enableRouting]);
+
+  const handleClearRoute = useCallback(() => {
+    setWaypoints([]);
+    setRouteInfo(null);
+    if (routingControlRef.current && mapInstanceRef.current) {
+      mapInstanceRef.current.removeControl(routingControlRef.current);
+      routingControlRef.current = null;
+    }
   }, []);
 
   // Initialize map
@@ -85,6 +131,10 @@ export const LeafletMap = memo<LeafletMapProps>(({
         // map.setMaxBounds(bounds);
 
         mapInstanceRef.current = map;
+        
+        // Add click handler for routing
+        map.on('click', handleMapClick);
+        
         setIsMapLoaded(true);
         setMapError(null);
       } catch (error) {
@@ -101,7 +151,83 @@ export const LeafletMap = memo<LeafletMapProps>(({
         setIsMapLoaded(false);
       }
     };
-  }, []);
+  }, [handleMapClick]);
+
+  // Handle routing when waypoints change
+  useEffect(() => {
+    if (!mapInstanceRef.current || !enableRouting || waypoints.length < 2) {
+      return;
+    }
+
+    // Remove existing routing control
+    if (routingControlRef.current) {
+      mapInstanceRef.current.removeControl(routingControlRef.current);
+    }
+
+    try {
+      // Create routing control with OpenRouteService
+      routingControlRef.current = (L as any).Routing.control({
+        waypoints: waypoints,
+        routeWhileDragging: false,
+        addWaypoints: false,
+        createMarker: function(i: number, waypoint: any) {
+          const isStart = i === 0;
+          return L.marker(waypoint.latLng, {
+            icon: L.divIcon({
+              html: `
+                <div style="
+                  background: ${isStart ? '#22c55e' : '#ef4444'}; 
+                  color: white;
+                  border-radius: 50%; 
+                  width: 30px; 
+                  height: 30px; 
+                  display: flex; 
+                  align-items: center; 
+                  justify-content: center; 
+                  font-weight: bold;
+                  font-size: 14px;
+                  border: 2px solid white;
+                  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+                ">${isStart ? 'A' : 'B'}</div>
+              `,
+              iconSize: [30, 30],
+              iconAnchor: [15, 15],
+              className: 'routing-waypoint-marker'
+            })
+          });
+        },
+        router: (L as any).Routing.osrmv1({
+          serviceUrl: 'https://router.project-osrm.org/route/v1',
+          profile: 'foot', // Walking routes for campus
+        }),
+        lineOptions: {
+          styles: [
+            { color: '#3b82f6', opacity: 0.8, weight: 6 },
+            { color: '#ffffff', opacity: 0.9, weight: 4 }
+          ]
+        }
+      }).on('routesfound', function(e: any) {
+        const routes = e.routes;
+        if (routes && routes.length > 0) {
+          const route = routes[0];
+          const distance = (route.summary.totalDistance / 1000).toFixed(2) + ' km';
+          const time = Math.round(route.summary.totalTime / 60) + ' min';
+          const instructions = route.instructions?.map((instruction: any) => instruction.text) || [];
+          
+          setRouteInfo({ distance, time, instructions });
+          toast.success(`Route found: ${distance}, ${time}`, { duration: 3000 });
+        }
+      }).on('routingerror', function(e: any) {
+        console.error('Routing error:', e);
+        toast.error('Could not find route between selected points');
+        setRouteInfo(null);
+      }).addTo(mapInstanceRef.current);
+
+    } catch (error) {
+      console.error('Error creating route:', error);
+      toast.error('Error creating route. Please try again.');
+    }
+  }, [waypoints, enableRouting]);
 
   // Use the already filtered locations from props, with fallback sample data
   const filteredLocations = useMemo(() => {
@@ -371,11 +497,38 @@ export const LeafletMap = memo<LeafletMapProps>(({
         >
           🎫
         </button>
+        
+        {/* Navigation Controls - Only show if routing is enabled */}
+        {/* This is now handled by the sidebar */}
       </div>
+
+      {/* Subtle Navigation Bar */}
+      {enableRouting && routingMode && (
+        <div className="absolute top-4 left-1/2 -translate-x-1/2 z-[1000] bg-black/60 text-white rounded-lg shadow-lg px-4 py-2 flex items-center gap-4 backdrop-blur-sm">
+          <p className="text-sm font-medium">
+            {waypoints.length === 0 && "Click on the map to set a starting point."}
+            {waypoints.length === 1 && "Click on the map to set the destination."}
+            {waypoints.length === 2 && routeInfo && `Route: ${routeInfo.distance} (${routeInfo.time})`}
+            {waypoints.length === 2 && !routeInfo && "Calculating route..."}
+          </p>
+          {waypoints.length > 0 && (
+            <button
+              className="text-white/80 hover:text-white hover:bg-white/20 rounded-full p-1 transition-colors"
+              title="Clear route"
+              aria-label="Clear current route"
+              onClick={handleClearRoute}
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Search Results Counter with Accessibility */}
     <div 
-      className="absolute top-4 left-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2"
+      className={`absolute top-4 z-[1000] bg-white rounded-lg shadow-lg px-3 py-2 ${
+        enableRouting ? 'right-4' : 'left-4'
+      }`}
       role="status"
       aria-live="polite"
       aria-label={`Search results: ${(Array.isArray(filteredLocations) ? filteredLocations.length : 0)} location${(Array.isArray(filteredLocations) ? filteredLocations.length : 0) !== 1 ? 's' : ''} found`}
