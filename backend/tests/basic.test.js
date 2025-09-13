@@ -1,4 +1,6 @@
 /* eslint-env jest, node */
+import { describe, test, expect } from '@jest/globals';
+import express from 'express';
 
 // Simple unit tests that don't require database
 describe('Backend Utilities', () => {
@@ -7,8 +9,7 @@ describe('Backend Utilities', () => {
     expect(process.env).toBeDefined();
   });
 
-  test('NPM packages can be required', () => {
-    const express = require('express');
+  test('NPM packages can be imported', () => {
     expect(express).toBeDefined();
     expect(typeof express).toBe('function');
   });
