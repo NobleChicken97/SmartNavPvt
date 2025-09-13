@@ -1,12 +1,10 @@
 
 /* eslint-env jest, node */
+import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 import mongoose from 'mongoose';
 
 // Basic placeholder test for CI pipeline
 describe('Smart Navigator Backend', () => {
-  // Set test timeout globally
-  jest.setTimeout(10000);
-  
   beforeAll(async () => {
     // Mock database connection for testing
     try {
